@@ -220,7 +220,7 @@ export default function HistoryPage() {
               href="/"
               className="inline-flex h-10 items-center rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
             >
-              Back to home
+              Back home
             </Link>
             <Link
               href="/offers"
