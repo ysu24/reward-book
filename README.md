@@ -1,4 +1,4 @@
-## Perks Keeper
+## Perks Keeper-Yiheng Su
 
 A Web App for keeping credit-card rewards organized. The app helps cardholders track active offers, log spend in real time, and review historical perks without relying on spreadsheets or issuer inbox searches.
 
