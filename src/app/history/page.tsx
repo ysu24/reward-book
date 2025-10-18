@@ -323,18 +323,38 @@ export default function HistoryPage() {
                         </p>
                         <p className="mt-1">
                           Earned {formatCurrency(stats.earned)} /{" "}
-                          {formatCurrency(offer.cashbackCap)}
+                          {formatCurrency(
+                            offer.rewardType === "threshold"
+                              ? offer.rewardAmount ?? offer.cashbackCap
+                              : offer.cashbackCap,
+                          )}
                         </p>
                         <p>
-                          Spend {formatCurrency(stats.remainSpendToCap)} to max
+                          {stats.remainSpendToCap <= 0
+                            ? offer.rewardType === "percentage"
+                              ? "Maxed"
+                              : "Reward unlocked"
+                            : offer.rewardType === "percentage"
+                              ? `Spend ${formatCurrency(stats.remainSpendToCap)} more`
+                              : `Spend ${formatCurrency(stats.remainSpendToCap)} more to unlock`}
                         </p>
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white/70 p-3">
                         <p className="font-medium text-slate-900">Details</p>
-                        <p className="mt-1">
-                          Rate: {(offer.rate * 100).toFixed(0)}% · Cap{" "}
-                          {formatCurrency(offer.cashbackCap)}
-                        </p>
+                        {offer.rewardType === "percentage" ? (
+                          <p className="mt-1">
+                            Rate: {(offer.rate * 100).toFixed(0)}% · Cap {formatCurrency(offer.cashbackCap)}
+                          </p>
+                        ) : (
+                          <>
+                            <p className="mt-1">
+                              Reward: {formatCurrency(offer.rewardAmount ?? 0)}
+                            </p>
+                            <p>
+                              Threshold: {formatCurrency(offer.spendThreshold ?? 0)}
+                            </p>
+                          </>
+                        )}
                         <p>Category: {offer.category}</p>
                       </div>
                     </div>

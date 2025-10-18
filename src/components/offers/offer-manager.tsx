@@ -16,6 +16,7 @@ import {
   type Offer,
   type OfferCategory,
   type CardIssuer,
+  type OfferRewardType,
 } from "@/lib/types";
 import {
   computeOfferStats,
@@ -75,6 +76,9 @@ interface OfferFormState {
   expireDate: string;
   category: OfferCategory;
   note: string;
+  rewardType: OfferRewardType;
+  rewardAmount: string;
+  spendThreshold: string;
 }
 
 const blankForm: OfferFormState = {
@@ -87,6 +91,9 @@ const blankForm: OfferFormState = {
   expireDate: "",
   category: "Dining",
   note: "",
+  rewardType: "percentage",
+  rewardAmount: "",
+  spendThreshold: "",
 };
 
 const currencyFormatter = new Intl.NumberFormat(undefined, {
@@ -161,7 +168,9 @@ function offerToFormState(offer: Offer): OfferFormState {
     merchant: offer.merchant,
     cardId: offer.cardId,
     ratePercent:
-      offer.rate > 0 ? (offer.rate * 100).toFixed(2).replace(/\.00$/, "") : "",
+      offer.rewardType === "percentage" && offer.rate > 0
+        ? (offer.rate * 100).toFixed(2).replace(/\.00$/, "")
+        : "",
     cashbackCap:
       offer.cashbackCap > 0
         ? offer.cashbackCap.toFixed(2).replace(/\.00$/, "")
@@ -171,6 +180,15 @@ function offerToFormState(offer: Offer): OfferFormState {
     expireDate: toDateInputValue(offer.expireAt),
     category: offer.category,
     note: offer.note ?? "",
+    rewardType: offer.rewardType ?? "percentage",
+    rewardAmount:
+      offer.rewardAmount != null
+        ? offer.rewardAmount.toFixed(2).replace(/\.00$/, "")
+        : "",
+    spendThreshold:
+      offer.spendThreshold != null
+        ? offer.spendThreshold.toFixed(2).replace(/\.00$/, "")
+        : "",
   };
 }
 
@@ -258,7 +276,10 @@ export function OfferManager() {
 
   const updateCreateForm = useCallback(
     (field: keyof OfferFormState, value: string) => {
-      setCreateForm((prev) => ({ ...prev, [field]: value }));
+      setCreateForm((prev) => ({
+        ...prev,
+        [field]: value as OfferFormState[keyof OfferFormState],
+      }));
       setCreateError(null);
       setCreateStatus(null);
     },
@@ -267,7 +288,14 @@ export function OfferManager() {
 
   const updateEditForm = useCallback(
     (field: keyof OfferFormState, value: string) => {
-      setEditForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+      setEditForm((prev) =>
+        prev
+          ? {
+              ...prev,
+              [field]: value as OfferFormState[keyof OfferFormState],
+            }
+          : prev,
+      );
       setEditError(null);
       setEditStatus(null);
     },
@@ -275,13 +303,10 @@ export function OfferManager() {
   );
 
   const parseOfferForm = (form: OfferFormState): ParsedOfferResult => {
-    const merchant = form.merchant.trim();
-    const ratePercent = Number(form.ratePercent);
-    const cashbackCap = Number(form.cashbackCap);
-    const cashbackEarned = Number(form.cashbackEarned);
-    const totalSpendTracked = Number(form.totalSpendTracked);
-    const expireAt = fromDateInput(form.expireDate);
+    const rewardType: OfferRewardType =
+      form.rewardType === "threshold" ? "threshold" : "percentage";
 
+    const merchant = form.merchant.trim();
     if (!merchant) {
       return { error: "Merchant name is required." };
     }
@@ -290,28 +315,74 @@ export function OfferManager() {
       return { error: "Select a linked card." };
     }
 
-    if (!Number.isFinite(ratePercent) || ratePercent <= 0) {
-      return { error: "Cashback rate must be greater than 0." };
-    }
-
-    if (!Number.isFinite(cashbackCap) || cashbackCap <= 0) {
-      return { error: "Cashback cap must be greater than 0." };
-    }
-
-    if (!Number.isFinite(cashbackEarned) || cashbackEarned < 0) {
-      return { error: "Cashback earned cannot be negative." };
-    }
-
-    if (!Number.isFinite(totalSpendTracked) || totalSpendTracked < 0) {
-      return { error: "Tracked spend cannot be negative." };
-    }
-
+    const expireAt = fromDateInput(form.expireDate);
     if (!expireAt) {
       return { error: "Expiration date is required." };
     }
 
-    const rate = ratePercent / 100;
+    const rawTotalSpend = Number(form.totalSpendTracked);
+    if (!Number.isFinite(rawTotalSpend) || rawTotalSpend < 0) {
+      return { error: "Tracked spend cannot be negative." };
+    }
+    const totalSpendTracked = Number(rawTotalSpend.toFixed(2));
 
+    const note = form.note.trim() || undefined;
+
+    if (rewardType === "threshold") {
+      const spendThreshold = Number(form.spendThreshold);
+      if (!Number.isFinite(spendThreshold) || spendThreshold <= 0) {
+        return { error: "Spend threshold must be greater than 0." };
+      }
+
+      const rewardAmount = Number(form.rewardAmount);
+      if (!Number.isFinite(rewardAmount) || rewardAmount <= 0) {
+        return { error: "Reward amount must be greater than 0." };
+      }
+
+      const earnedInput = Number(form.cashbackEarned);
+      const manualEarned = Number.isFinite(earnedInput)
+        ? Math.min(Math.max(0, earnedInput), rewardAmount)
+        : 0;
+      const thresholdMet = totalSpendTracked >= spendThreshold - 0.01;
+      const computedEarned = thresholdMet ? rewardAmount : 0;
+      const cashbackEarned = Math.max(manualEarned, computedEarned);
+
+      const data: ParsedOfferData = {
+        merchant,
+        cardId: form.cardId,
+        rate: Number((rewardAmount / spendThreshold).toFixed(6)),
+        cashbackCap: Number(rewardAmount.toFixed(2)),
+        cashbackEarned: Number(
+          Math.min(cashbackEarned, rewardAmount).toFixed(2),
+        ),
+        totalSpendTracked,
+        expireAt,
+        category: form.category,
+        note,
+        rewardType: "threshold",
+        rewardAmount: Number(rewardAmount.toFixed(2)),
+        spendThreshold: Number(spendThreshold.toFixed(2)),
+      };
+
+      return { data };
+    }
+
+    const ratePercent = Number(form.ratePercent);
+    if (!Number.isFinite(ratePercent) || ratePercent <= 0) {
+      return { error: "Cashback rate must be greater than 0." };
+    }
+
+    const cashbackCap = Number(form.cashbackCap);
+    if (!Number.isFinite(cashbackCap) || cashbackCap <= 0) {
+      return { error: "Cashback cap must be greater than 0." };
+    }
+
+    const cashbackEarnedInput = Number(form.cashbackEarned);
+    if (!Number.isFinite(cashbackEarnedInput) || cashbackEarnedInput < 0) {
+      return { error: "Cashback earned cannot be negative." };
+    }
+
+    const rate = ratePercent / 100;
     if (!Number.isFinite(rate) || rate <= 0) {
       return { error: "Cashback rate must be greater than 0." };
     }
@@ -319,7 +390,7 @@ export function OfferManager() {
     const spendCap = cashbackCap / rate;
     const clampedSpend = Math.min(Math.max(totalSpendTracked, 0), spendCap);
     const autoEarned = Math.min(clampedSpend * rate, cashbackCap);
-    const manualEarned = Math.min(cashbackEarned, cashbackCap);
+    const manualEarned = Math.min(cashbackEarnedInput, cashbackCap);
     const manualDiffers = Math.abs(manualEarned - autoEarned) > 0.01;
 
     const adjustedSpend = manualDiffers
@@ -337,7 +408,10 @@ export function OfferManager() {
       totalSpendTracked: Number(adjustedSpend.toFixed(2)),
       expireAt,
       category: form.category,
-      note: form.note.trim() || undefined,
+      note,
+      rewardType: "percentage",
+      rewardAmount: Number(cashbackCap.toFixed(2)),
+      spendThreshold: Number((cashbackCap / rate).toFixed(2)),
     };
 
     return { data };
@@ -527,50 +601,109 @@ export function OfferManager() {
               </label>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                Cashback rate (%)
-                <input
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  inputMode="decimal"
-                  placeholder="5"
-                  value={createForm.ratePercent}
-                  onChange={(event) =>
-                    updateCreateForm("ratePercent", event.target.value)
-                  }
-                />
-              </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              Offer type
+              <select
+                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                value={createForm.rewardType}
+                onChange={(event) =>
+                  updateCreateForm("rewardType", event.target.value)
+                }
+              >
+                <option value="percentage">Percentage cashback</option>
+                <option value="threshold">Spend threshold reward</option>
+              </select>
+            </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                Cashback cap ($)
-                <input
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  inputMode="decimal"
-                  placeholder="50"
-                  value={createForm.cashbackCap}
-                  onChange={(event) =>
-                    updateCreateForm("cashbackCap", event.target.value)
-                  }
-                />
-              </label>
+            {createForm.rewardType === "percentage" ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Cashback rate (%)
+                  <input
+                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    inputMode="decimal"
+                    placeholder="5"
+                    value={createForm.ratePercent}
+                    onChange={(event) =>
+                      updateCreateForm("ratePercent", event.target.value)
+                    }
+                  />
+                </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                Target spend ($)
-                <input
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                  inputMode="decimal"
-                  placeholder="0"
-                  value={createForm.totalSpendTracked}
-                  onChange={(event) =>
-                    updateCreateForm("totalSpendTracked", event.target.value)
-                  }
-                />
-              </label>
-            </div>
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Cashback cap ($)
+                  <input
+                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    inputMode="decimal"
+                    placeholder="50"
+                    value={createForm.cashbackCap}
+                    onChange={(event) =>
+                      updateCreateForm("cashbackCap", event.target.value)
+                    }
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Total spend tracked ($)
+                  <input
+                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={createForm.totalSpendTracked}
+                    onChange={(event) =>
+                      updateCreateForm("totalSpendTracked", event.target.value)
+                    }
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-3">
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Spend threshold ($)
+                  <input
+                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    inputMode="decimal"
+                    placeholder="125"
+                    value={createForm.spendThreshold}
+                    onChange={(event) =>
+                      updateCreateForm("spendThreshold", event.target.value)
+                    }
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Reward amount ($)
+                  <input
+                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    inputMode="decimal"
+                    placeholder="25"
+                    value={createForm.rewardAmount}
+                    onChange={(event) =>
+                      updateCreateForm("rewardAmount", event.target.value)
+                    }
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  Total spend tracked ($)
+                  <input
+                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={createForm.totalSpendTracked}
+                    onChange={(event) =>
+                      updateCreateForm("totalSpendTracked", event.target.value)
+                    }
+                  />
+                </label>
+              </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                Cashback earned ($)
+                {createForm.rewardType === "percentage"
+                  ? "Cashback earned ($)"
+                  : "Reward earned ($)"}
                 <input
                   className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   inputMode="decimal"
@@ -705,9 +838,9 @@ export function OfferManager() {
                         {card ? card.name : "Linked card unavailable"}
                       </p>
                       <p className="mt-2 text-sm text-slate-500">
-                        {formatPercent(offer.rate)} back up to{" "}
-                        {formatCurrency(offer.cashbackCap)} · Spend left{" "}
-                        {formatCurrency(stats.remainSpendToCap)}
+                        {offer.rewardType === "percentage"
+                          ? `${formatPercent(offer.rate)} back up to ${formatCurrency(offer.cashbackCap)} · ${stats.remainSpendToCap <= 0 ? "Maxed" : `Spend ${formatCurrency(stats.remainSpendToCap)} more`}`
+                          : `Earn ${formatCurrency(offer.rewardAmount ?? 0)} when you spend ${formatCurrency(offer.spendThreshold ?? 0)} · ${stats.remainSpendToCap <= 0 ? "Reward unlocked" : `Spend ${formatCurrency(stats.remainSpendToCap)} more to unlock`}`}
                       </p>
                       {offer.note ? (
                         <p className="mt-2 text-sm text-slate-500">
@@ -727,7 +860,11 @@ export function OfferManager() {
                       </div>
                       <p className="text-xs text-slate-500">
                         Earned {formatCurrency(stats.earned)} of{" "}
-                        {formatCurrency(offer.cashbackCap)}
+                        {formatCurrency(
+                          offer.rewardType === "threshold"
+                            ? offer.rewardAmount ?? offer.cashbackCap
+                            : offer.cashbackCap,
+                        )}
                       </p>
                       <p className="text-xs text-slate-500">
                         Expires{" "}
@@ -809,50 +946,115 @@ export function OfferManager() {
                         </label>
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                          Cashback rate (%)
-                          <input
-                            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                            inputMode="decimal"
-                            value={editForm.ratePercent}
-                            onChange={(event) =>
-                              updateEditForm("ratePercent", event.target.value)
-                            }
-                          />
-                        </label>
+                      <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                        Offer type
+                        <select
+                          className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          value={editForm.rewardType}
+                          onChange={(event) =>
+                            updateEditForm("rewardType", event.target.value)
+                          }
+                        >
+                          <option value="percentage">Percentage cashback</option>
+                          <option value="threshold">Spend threshold reward</option>
+                        </select>
+                      </label>
 
-                        <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                          Cashback cap ($)
-                          <input
-                            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                            inputMode="decimal"
-                            value={editForm.cashbackCap}
-                            onChange={(event) =>
-                              updateEditForm("cashbackCap", event.target.value)
-                            }
-                          />
-                        </label>
+                      {editForm.rewardType === "percentage" ? (
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                            Cashback rate (%)
+                            <input
+                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              inputMode="decimal"
+                              value={editForm.ratePercent}
+                              onChange={(event) =>
+                                updateEditForm("ratePercent", event.target.value)
+                              }
+                            />
+                          </label>
 
-                        <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                          Target spend ($)
-                          <input
-                            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                            inputMode="decimal"
-                            value={editForm.totalSpendTracked}
-                            onChange={(event) =>
-                              updateEditForm(
-                                "totalSpendTracked",
-                                event.target.value,
-                              )
-                            }
-                          />
-                        </label>
-                      </div>
+                          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                            Cashback cap ($)
+                            <input
+                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              inputMode="decimal"
+                              value={editForm.cashbackCap}
+                              onChange={(event) =>
+                                updateEditForm("cashbackCap", event.target.value)
+                              }
+                            />
+                          </label>
+
+                          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                            Total spend tracked ($)
+                            <input
+                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              inputMode="decimal"
+                              value={editForm.totalSpendTracked}
+                              onChange={(event) =>
+                                updateEditForm(
+                                  "totalSpendTracked",
+                                  event.target.value,
+                                )
+                              }
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                            Spend threshold ($)
+                            <input
+                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              inputMode="decimal"
+                              value={editForm.spendThreshold}
+                              onChange={(event) =>
+                                updateEditForm(
+                                  "spendThreshold",
+                                  event.target.value,
+                                )
+                              }
+                            />
+                          </label>
+
+                          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                            Reward amount ($)
+                            <input
+                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              inputMode="decimal"
+                              value={editForm.rewardAmount}
+                              onChange={(event) =>
+                                updateEditForm(
+                                  "rewardAmount",
+                                  event.target.value,
+                                )
+                              }
+                            />
+                          </label>
+
+                          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                            Total spend tracked ($)
+                            <input
+                              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              inputMode="decimal"
+                              value={editForm.totalSpendTracked}
+                              onChange={(event) =>
+                                updateEditForm(
+                                  "totalSpendTracked",
+                                  event.target.value,
+                                )
+                              }
+                            />
+                          </label>
+                        </div>
+                      )}
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                          Cashback earned ($)
+                          {editForm.rewardType === "percentage"
+                            ? "Cashback earned ($)"
+                            : "Reward earned ($)"}
                           <input
                             className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                             inputMode="decimal"

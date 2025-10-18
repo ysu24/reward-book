@@ -55,6 +55,39 @@ class PerksKeeperDB extends Dexie {
           });
         }
       });
+
+    this.version(3)
+      .stores({
+        cards: "id, issuer, name, createdAt, updatedAt",
+        offers:
+          "id, cardId, status, rewardType, category, expireAt, createdAt, updatedAt, cashbackEarned",
+        spendLogs: "id, offerId, createdAt",
+        stats: "&id",
+      })
+      .upgrade(async (tx) => {
+        const offerTable = tx.table<Offer>("offers");
+        await offerTable.toCollection().modify((offer) => {
+          const next = offer as Offer;
+          if (!next.rewardType) {
+            next.rewardType = "percentage";
+          }
+          if (next.rewardType === "percentage") {
+            if (next.rewardAmount == null) {
+              next.rewardAmount = next.cashbackCap ?? 0;
+            }
+            if (next.spendThreshold == null && next.rate > 0) {
+              next.spendThreshold = (next.cashbackCap ?? 0) / next.rate;
+            }
+          } else {
+            if (next.rewardAmount == null) {
+              next.rewardAmount = next.cashbackCap ?? 0;
+            }
+            if (next.spendThreshold == null) {
+              next.spendThreshold = 0;
+            }
+          }
+        });
+      });
   }
 }
 

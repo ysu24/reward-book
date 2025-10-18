@@ -257,12 +257,22 @@ export function QuickLogPanel({
                             <p className="font-semibold text-slate-900">
                               {selectedOffer.merchant}
                             </p>
-                            <p className="mt-1">
-                              Earned {formatCurrency(stats.earned)} / {formatCurrency(selectedOffer.cashbackCap)}
-                            </p>
-                            <p>
-                              Spend {formatCurrency(stats.remainSpendToCap)} more to max
-                            </p>
+                          <p className="mt-1">
+                            Earned {formatCurrency(stats.earned)} / {formatCurrency(
+                              selectedOffer.rewardType === "threshold"
+                                ? selectedOffer.rewardAmount ?? selectedOffer.cashbackCap
+                                : selectedOffer.cashbackCap,
+                            )}
+                          </p>
+                          <p>
+                            {stats.remainSpendToCap <= 0
+                              ? selectedOffer.rewardType === "percentage"
+                                ? "Maxed"
+                                : "Reward unlocked"
+                              : selectedOffer.rewardType === "percentage"
+                                ? `Spend ${formatCurrency(stats.remainSpendToCap)} more to max`
+                                : `Spend ${formatCurrency(stats.remainSpendToCap)} more to unlock`}
+                          </p>
                           </div>
                         ) : null}
 

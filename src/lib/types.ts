@@ -9,6 +9,7 @@ export type OfferCategory =
   | "Other";
 
 export type OfferStatus = "active" | "expired" | "maxed" | "archived";
+export type OfferRewardType = "percentage" | "threshold";
 
 export interface Card {
   id: string;
@@ -29,6 +30,9 @@ export interface Offer {
   expireAt: number;
   category: OfferCategory;
   note?: string;
+  rewardType: OfferRewardType;
+  rewardAmount?: number;
+  spendThreshold?: number;
   status: OfferStatus;
   archivedAt?: number;
   creditedToLifetime?: boolean;

@@ -469,8 +469,9 @@ export function HomeDashboard() {
                       </div>
 
                       <p className="text-sm text-slate-600">
-                        {formatPercent(offer.rate)} back up to{" "}
-                        {formatCurrency(offer.cashbackCap)}
+                        {offer.rewardType === "percentage"
+                          ? `${formatPercent(offer.rate)} back up to ${formatCurrency(offer.cashbackCap)}`
+                          : `Earn ${formatCurrency(offer.rewardAmount ?? 0)} when you spend ${formatCurrency(offer.spendThreshold ?? 0)}`}
                       </p>
 
                       <div className="mt-2">
@@ -483,15 +484,23 @@ export function HomeDashboard() {
                           />
                         </div>
                         <div className="mt-2 flex flex-wrap items-center justify-between text-xs text-slate-500">
-                          <span>
-                            Earned {formatCurrency(stats.earned)} /{" "}
-                            {formatCurrency(offer.cashbackCap)}
-                          </span>
-                          <span>
-                            {stats.remainSpendToCap <= 0
+                        <span>
+                          Earned {formatCurrency(stats.earned)} /{" "}
+                          {formatCurrency(
+                            offer.rewardType === "threshold"
+                              ? offer.rewardAmount ?? offer.cashbackCap
+                              : offer.cashbackCap,
+                          )}
+                        </span>
+                        <span>
+                          {stats.remainSpendToCap <= 0
+                            ? offer.rewardType === "percentage"
                               ? "Maxed"
-                              : `Spend ${formatCurrency(stats.remainSpendToCap)} more`}
-                          </span>
+                              : "Reward unlocked"
+                            : offer.rewardType === "percentage"
+                              ? `Spend ${formatCurrency(stats.remainSpendToCap)} more`
+                              : `Spend ${formatCurrency(stats.remainSpendToCap)} more to unlock`}
+                        </span>
                         </div>
                       </div>
 
