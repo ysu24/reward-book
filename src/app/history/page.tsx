@@ -36,7 +36,7 @@ const CATEGORY_FILTERS: Array<{ label: string; value: OfferCategory | "all" }> =
   [
     { label: "All categories", value: "all" },
     { label: "Dining", value: "Dining" },
-    { label: "Travel", value: "Travel" },
+    { label: "Shopping", value: "Shopping" },
     { label: "Grocery", value: "Grocery" },
     { label: "Gas", value: "Gas" },
     { label: "Online", value: "Online" },

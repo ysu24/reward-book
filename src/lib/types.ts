@@ -2,7 +2,7 @@ export type CardIssuer = "Chase" | "Amex" | "Citi" | "Other";
 
 export type OfferCategory =
   | "Dining"
-  | "Travel"
+  | "Shopping"
   | "Grocery"
   | "Gas"
   | "Online"

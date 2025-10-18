@@ -20,7 +20,7 @@ import { QuickLogPanel } from "@/components/spend/quick-log-panel";
 
 const CATEGORY_ORDER: OfferCategory[] = [
   "Dining",
-  "Travel",
+  "Shopping",
   "Grocery",
   "Gas",
   "Online",
@@ -29,7 +29,7 @@ const CATEGORY_ORDER: OfferCategory[] = [
 
 const CATEGORY_COPY: Record<OfferCategory, string> = {
   Dining: "Restaurants, cafes, and takeout perks.",
-  Travel: "Flights, hotels, and transit bonuses.",
+  Shopping: "Retail stores, malls, and in-person buys.",
   Grocery: "Supermarkets, warehouse clubs, and delivery.",
   Gas: "Fuel stations and auto services.",
   Online: "E-commerce, streaming, and digital buys.",
@@ -38,7 +38,7 @@ const CATEGORY_COPY: Record<OfferCategory, string> = {
 
 const CATEGORY_COLOR: Record<OfferCategory, string> = {
   Dining: "bg-orange-100 text-orange-700",
-  Travel: "bg-sky-100 text-sky-700",
+  Shopping: "bg-pink-100 text-pink-700",
   Grocery: "bg-emerald-100 text-emerald-700",
   Gas: "bg-amber-100 text-amber-700",
   Online: "bg-indigo-100 text-indigo-700",
@@ -168,15 +168,15 @@ function CategoryIcon({ category }: { category: OfferCategory }) {
           />
         </svg>
       );
-    case "Travel":
+    case "Shopping":
       return (
         <svg
           viewBox="0 0 24 24"
-          className="h-6 w-6 text-sky-500"
+          className="h-6 w-6 text-pink-500"
           aria-hidden="true"
         >
           <path
-            d="M3 12c0-.6.4-1 1-1h7L8.5 4.5 10 3l6 8h4a1 1 0 1 1 0 2h-4l-6 8-1.5-1.5L11 13H4c-.6 0-1-.4-1-1Z"
+            d="M8 7V6a4 4 0 0 1 8 0v1h2a1 1 0 0 1 1 1v11a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V8a1 1 0 0 1 1-1h2Zm2-1v1h4V6a2 2 0 0 0-4 0Z"
             fill="currentColor"
           />
         </svg>

@@ -28,7 +28,7 @@ import {
 
 const CATEGORY_OPTIONS: OfferCategory[] = [
   "Dining",
-  "Travel",
+  "Shopping",
   "Grocery",
   "Gas",
   "Online",
@@ -44,7 +44,7 @@ const ISSUER_TAG_STYLES: Record<CardIssuer, string> = {
 
 const CATEGORY_BADGE: Record<OfferCategory, string> = {
   Dining: "bg-orange-100 text-orange-700",
-  Travel: "bg-sky-100 text-sky-700",
+  Shopping: "bg-pink-100 text-pink-700",
   Grocery: "bg-emerald-100 text-emerald-700",
   Gas: "bg-amber-100 text-amber-700",
   Online: "bg-indigo-100 text-indigo-700",
