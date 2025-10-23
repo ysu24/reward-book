@@ -28,7 +28,7 @@ const CATEGORY_ORDER: OfferCategory[] = [
 ];
 
 const CATEGORY_COPY: Record<OfferCategory, string> = {
-  Dining: "Restaurants, cafes, and takeout perks.",
+  Dining: "Restaurants, cafes, and takeout rewards.",
   Shopping: "Retail stores, malls, and in-person buys.",
   Grocery: "Supermarkets, warehouse clubs, and delivery.",
   Gas: "Fuel stations and auto services.",
@@ -354,7 +354,7 @@ export function HomeDashboard() {
             <p className="text-sm text-slate-500">Active cards</p>
             <p className="mt-2 text-3xl font-semibold text-slate-900">{cards.length}</p>
             <p className="mt-1 text-sm text-slate-500">
-              {cards.length ? "Ready to link offers and track perks." : "Add cards to begin."}
+              {cards.length ? "Ready to link offers and track rewards." : "Add cards to begin."}
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -364,7 +364,7 @@ export function HomeDashboard() {
             </p>
             <p className="mt-1 text-sm text-slate-500">
               {offers.length
-                ? "Group by category to spot perks fast."
+                ? "Group by category to spot rewards fast."
                 : "No offers yet - add your first perk."}
             </p>
           </div>
@@ -387,7 +387,7 @@ export function HomeDashboard() {
             No offers yet
           </h2>
           <p className="mt-2 text-sm text-slate-500">
-            Import perks from your cards to see categories and progress appear here.
+            Import rewards from your cards to see categories and progress appear here.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Link

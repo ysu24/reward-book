@@ -4,9 +4,9 @@ import Link from "next/link";
 import { CardManager } from "@/components/cards/card-manager";
 
 export const metadata: Metadata = {
-  title: "Manage cards • Perks Keeper",
+  title: "Manage cards • Reward Book",
   description:
-    "Add, review, and remove the credit cards you want to track in Perks Keeper.",
+    "Add, review, and remove the credit cards you want to track in Reward Book.",
 };
 
 export default function CardsPage() {
@@ -19,7 +19,7 @@ export default function CardsPage() {
               href="/"
               className="text-base font-semibold text-slate-900 transition hover:text-blue-600"
             >
-              Perks Keeper
+              Reward Book
             </Link>
             <p className="text-sm text-slate-500">Card management</p>
           </div>

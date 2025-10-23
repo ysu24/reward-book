@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Perks Keeper",
-  description: "Track credit card offers and perks in one place.",
+  title: "Reward Book",
+  description: "Track credit card offers and rewards in one place.",
 };
 
 export default function RootLayout({

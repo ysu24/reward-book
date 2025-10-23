@@ -1,6 +1,6 @@
-## Perks Keeper-Yiheng Su
+## Reward Book-Yiheng Su
 
-A Web App for keeping credit-card rewards organized. The app helps cardholders track active offers, log spend in real time, and review historical perks without relying on spreadsheets or issuer inbox searches.
+A Web App for keeping credit-card rewards organized. The app helps cardholders track active offers, log spend in real time, and review historical rewards without relying on spreadsheets or issuer inbox searches.
 
 ---
 
@@ -27,7 +27,7 @@ A Web App for keeping credit-card rewards organized. The app helps cardholders t
 ## Project Structure
 
 ```
-perks-keeper/
+reward-book/
 ├─ src/
 │  ├─ app/
 │  │  ├─ page.tsx                # Dashboard (active offers)

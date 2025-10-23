@@ -4,7 +4,7 @@ import Link from "next/link";
 import { OfferManager } from "@/components/offers/offer-manager";
 
 export const metadata: Metadata = {
-  title: "Manage offers • Perks Keeper",
+  title: "Manage offers • Reward Book",
   description:
     "Create, edit, and track card-linked offers with spending progress and caps.",
 };
@@ -19,7 +19,7 @@ export default function OffersPage() {
               href="/"
               className="text-base font-semibold text-slate-900 transition hover:text-blue-600"
             >
-              Perks Keeper
+              Reward Book
             </Link>
             <p className="text-sm text-slate-500">Offer management</p>
           </div>

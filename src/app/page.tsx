@@ -10,11 +10,11 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600">
-              Perks Keeper
+              Reward Book
             </p>
             <h1 className="mt-2 text-2xl font-bold text-slate-900">My offers</h1>
             <p className="text-sm text-slate-600">
-              Centralize every perk. Know what to spend next.
+              Centralize every reward. Know what to spend next.
             </p>
           </div>
           <div className="flex items-center gap-3">
